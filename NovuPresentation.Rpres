@@ -1,0 +1,349 @@
+Initech Pilot Campaign Results
+========================================================
+author: Miadad Rashid
+date: June 30, 2015
+
+Introduction
+========================================================
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Our client, Insurance Insights and Technologies (Initech), recently asked us to set up a special program on our site. We conducted two separate pilot marketing campaigns to promote this program to their members on our site. We need to analyze these two pilot campaigns and inform the client of the results.
+```{r, echo = F}
+setwd("D:/Documents/GitHub/NovuInterview")
+library(ggplot2)
+library(reshape2)
+library(R.utils)
+library(knitr)
+# Load Data
+novu.data <- read.csv('Novu Interview Data.csv', stringsAsFactors = F)
+
+# Clean data
+# State Variable
+novu.data$state <- toupper(novu.data$state)
+novu.data$state <- replace(novu.data$state, novu.data$state == 'DN', 'ND')
+novu.data$state <- replace(novu.data$state, novu.data$state == 'WO', 'WI')
+
+# Month Variable
+novu.data$month <- toupper(novu.data$month)
+novu.data$month <- replace(novu.data$month, novu.data$month == 'APIRL', 'APRIL')
+novu.data$month <- replace(novu.data$month, novu.data$month == 'MAR', 'MARCH')
+
+# Turn Gender from numeric to string
+gender <- novu.data$gender
+gender[gender == 1] <- 'MALE'
+gender[gender == 2] <- 'FEMALE'
+novu.data$gender <- gender
+
+# NA values
+novu.data$gender[is.na(novu.data$gender)] <- 0
+
+# Birthdate variable
+novu.data$birthdate <- as.Date(novu.data$birthdate, "%Y-%m-%d")
+
+# Responded Variable
+res <- novu.data$responded
+res[res == 0] <- 'NO'
+res[res == 1] <- 'YES'
+novu.data$responded <- res
+
+# Adding Variables
+
+# Adding the Age variable
+now <- format(Sys.Date(), "%Y-%m-%d")
+age <- difftime(now, novu.data$birthdate, units = "days")/365
+age <- round(age, digits = 1)
+novu.data$age <- age
+
+# Birthmonth Variable
+birthmonth <- toupper(format(as.Date(novu.data$birthdate), format = "%B"))
+
+# Was campaign same month as birthday
+no <- rep('NO', length(novu.data$month))
+no[novu.data$month == novu.data$birthmonth] <- 'YES'
+novu.data$on_birthmonth <- no
+
+# Campaign Variable
+campaign <- rep(2, length(novu.data$month))
+campaign[novu.data$month == 'APRIL'] <- 1
+campaign[novu.data$month == 'MARCH'] <- 1
+novu.data$campaign <- campaign
+
+
+
+# General Campaign Success Rate
+c.table <- aggregate(novu.data$responded, list(campaign=novu.data$campaign),
+                     table)
+c.table$YES <- c.table$x[3:4]
+c.table$NO <- c.table$x[1:2]
+c.table$x <- NULL
+names(c.table) <- c('Campaign', 'YES', 'NO')
+percent <- c.table$YES/(c.table$YES + c.table$NO) * 100
+c.table$ResponsePercentage <- round(percent,
+                                    digits = 1)
+
+# Campaign Success Rate by State
+state.table <- aggregate(novu.data$responded, list(State=novu.data$state, 
+                                                   Campaign=novu.data$campaign), 
+                         table)
+state.table$YES <- state.table$x[9:16]
+state.table$NO <- state.table$x[1:8]
+state.table$x <- NULL
+state.table <- state.table[order(state.table$State),]
+row.names(state.table) <- NULL
+percent <- state.table$YES/(state.table$YES + state.table$NO) * 100
+percent <- round(percent,
+                 digits = 1)
+state.table$ConversionRate <- percent
+change <- diff(percent)
+change <- append(0, change)
+change[1] <- 'MN';
+change[3] <- 'ND';
+change[5] <- 'SD';
+change[7] <- 'WI'
+state.table$PercentageChange <- change
+
+# Aggregated by Gender Variable
+gender.table <- aggregate(novu.data$gender, list(State=novu.data$state, 
+                                    Campaign=novu.data$campaign, 
+                                    Response=novu.data$responded), 
+          table)
+gender.table$FEMALE <- gender.table$x[17:32]
+gender.table$MALE <- gender.table$x[33:48]
+gender.table$UNKNOWN <- gender.table$x[1:16]
+gender.table$x <- NULL
+perc <- abs(gender.table$FEMALE-gender.table$MALE)/(gender.table$FEMALE+gender.table$MALE) * 100
+perc <- round(perc, 
+              digits = 1)
+gender.table$PercentDifference <- perc
+gender.table$UNKNOWN <- NULL
+gender.table <- gender.table[order(gender.table$State, gender.table$Campaign),]
+
+# Gender based Conversion Rate
+
+f.cr <- round((gender.table$FEMALE[seq(2, 16, 2)])/(gender.table$FEMALE[seq(1, 16, 2)] + gender.table$FEMALE[seq(2, 16, 2)])*100, digits = 1)
+m.cr <- round((gender.table$MALE[seq(2, 16, 2)])/(gender.table$MALE[seq(1, 16, 2)] + gender.table$MALE[seq(2, 16, 2)])*100, digits = 1)
+t.fem <- gender.table$FEMALE[seq(1, 16, 2)] + gender.table$FEMALE[seq(2, 16, 2)]
+t.mal <- gender.table$MALE[seq(1, 16, 2)] + gender.table$MALE[seq(2, 16, 2)]
+gender.cr <- data.frame('State' = c('MN', 'MN', 
+                       'ND', 'ND', 
+                       'SD', 'SD',
+                       'WI', 'WI'), 
+           'Campaign' = rep(c(1, 2), 4),
+           'T.Female' = t.fem, 
+           'F.Con.Rate' = f.cr,
+           'T.Male' = m.cr,
+           'M.Con.Rate' = m.cr)
+f.diff <- gender.cr$F.Con.Rate[seq(2, 8, 2)] -
+    gender.cr$F.Con.Rate[seq(1, 8, 2)]
+m.diff <- gender.cr$M.Con.Rate[seq(2, 8, 2)] - 
+    gender.cr$M.Con.Rate[seq(1, 8, 2)]
+
+g.diff.table <- data.frame('Gender' = c('FEMALE', 'MALE'), 
+           'MN' = c(f.diff[1], m.diff[1]), 
+           'ND' = c(f.diff[2], m.diff[2]), 
+           'SD' = c(f.diff[3], m.diff[3]), 
+           'WI' = c(f.diff[4], m.diff[4]))
+
+
+# Aggregated Age
+complete.age <- novu.data[!is.na(novu.data$age),]
+funny <- complete.age[complete.age$age > 170,]
+complete.age <- complete.age[!(complete.age$age > 170),]
+age.table <- aggregate(complete.age$age, list(State = complete.age$state, 
+                                 Campaign = complete.age$campaign), 
+          mean)
+yes.age <- complete.age[complete.age$responded == 'YES', ]
+yes.table <- aggregate(yes.age$age, list(State = yes.age$state, 
+                                 Campaign = yes.age$campaign), 
+          mean)
+names(age.table) <- c('State', 'Campaign', 'Means')
+names(yes.table) <- c('State', 'Campaign', 'Means')
+yes.table$Means <- round(yes.table$Means, digits = 1)
+yes.table <- yes.table[order(yes.table$State), ]
+row.names(yes.table) <- NULL
+difference <- round(c(0, diff(yes.table$Means)), digits = 1)
+difference[seq(1, 8, 2)] <- '-'
+yes.table$Difference <- difference
+age.table$Means <- round(age.table$Means, digits = 1)
+age.table <- age.table[order(age.table$State), ]
+row.names(age.table) <- NULL
+age_histogram <- qplot(x = as.numeric(age), data = complete.age, 
+      fill = as.factor(campaign), 
+      binwidth = 1/2) +
+    xlab('Age') + 
+    ylab('Frequency') +
+    ggtitle('Distribution of Age\nBy Campaign') + 
+    labs(fill = 'Campaign')
+
+# Mann-Whitney U-test on age differences
+age.1 <- as.numeric(complete.age[complete.age$responded == 'YES' & complete.age$campaign == 1,]$age)
+age.2 <- as.numeric(complete.age[complete.age$responded == 'YES' & complete.age$campaign == 2,]$age)
+All.pvalue <- wilcox.test(age.1, age.2)$p.value
+
+# Per State
+MN.age.1 <- as.numeric(complete.age[complete.age$responded == 'YES' & complete.age$campaign == 1 & complete.age$state == 'MN',]$age)
+MN.age.2 <- as.numeric(complete.age[complete.age$responded == 'YES' & complete.age$campaign == 2 & complete.age$state == 'MN',]$age)
+MN.pvalue <- wilcox.test(MN.age.1, MN.age.2)$p.value
+
+
+ND.age.1 <- as.numeric(complete.age[complete.age$responded == 'YES' & complete.age$campaign == 1 & complete.age$state == 'ND',]$age)
+ND.age.2 <- as.numeric(complete.age[complete.age$responded == 'YES' & complete.age$campaign == 2 & complete.age$state == 'ND',]$age)
+ND.pvalue <- wilcox.test(ND.age.1, ND.age.2)$p.value
+
+
+SD.age.1 <- as.numeric(complete.age[complete.age$responded == 'YES' & complete.age$campaign == 1 & complete.age$state == 'SD',]$age)
+SD.age.2 <- as.numeric(complete.age[complete.age$responded == 'YES' & complete.age$campaign == 2 & complete.age$state == 'SD',]$age)
+SD.pvalue <- wilcox.test(SD.age.1, SD.age.2)$p.value
+
+
+WI.age.1 <- as.numeric(complete.age[complete.age$responded == 'YES' & complete.age$campaign == 1 & complete.age$state == 'WI',]$age)
+WI.age.2 <- as.numeric(complete.age[complete.age$responded == 'YES' & complete.age$campaign == 2 & complete.age$state == 'WI',]$age)
+WI.pvalue <- wilcox.test(WI.age.1, WI.age.2)$p.value
+
+prob.table <- data.frame('States' = c('All', 'MN', 'ND', 'SD', 'WI'), 
+           'Chance' = c(All.pvalue, MN.pvalue, ND.pvalue, SD.pvalue, WI.pvalue))
+
+# Pie Chart Calculations
+c1 <- state.table[state.table$Campaign == 1,]
+st_per1 <- round((c1$YES + c1$NO)/sum(c1$YES + c1$NO)*100, 
+                 digit = 1)
+cmp1 <- data.frame('MN' = st_per1[1], 
+           'ND' = st_per1[2],
+           'SD' = st_per1[3], 
+           'WI' = st_per1[4])
+c2 <- state.table[state.table$Campaign == 2,]
+st_per2 <- round((c2$YES + c2$NO)/sum(c2$YES + c2$NO)*100, 
+                 digit = 1)
+cmp2 <- data.frame('MN' = st_per2[1], 
+                   'ND' = st_per2[2],
+                   'SD' = st_per2[3], 
+                   'WI' = st_per2[4])
+
+```
+
+Data Inconsistencies
+========================================================
+
++ 14 unique **state** values instead of 4
++ There are 7 unique **month** values, yet there are only 3 distinct months (March, April, May)
++ Only 6 of the observations in the **month** variable were labeled `Mar`
++ There are 181 `zero` values and 1 `NA` value for the **gender** variable
+
+Success Rates
+========================================================
+### General Campaign Success Rate
+```{r, echo=FALSE, fig.width = 10}
+kable(c.table, align = 'r', format = 'markdown')
+```
++ Increase of 8.8% between April and May
+
+### Success Rate by State
+```{r, echo = FALSE}
+kable(state.table, align = 'r', format = 'markdown')
+```
+
+Shift in Target Market
+========================================================
+Concentration of Users per Campaign
+```{r, echo = F, fig.width = 15, fig.height = 12}
+ggplot(aes(x = State, y = YES + NO, fill = State), data = state.table) + 
+    geom_bar(stat = 'identity') + 
+    facet_wrap(~Campaign) + 
+    ylab('Total Users') + 
+    xlab('Campaign') + 
+    theme(text = element_text(size = 20))
+
+```
+
+===
+### Conitued...
+
++ In the first campaign, MN(**orange**) has 50.6% of the user base
++ In the second campaign, target market shifts - SD(**blue**) takes 55.2% of the cut while MN drops to 8.8%
++ The blank spot in Campaign 1 represents the the raw difference in user base between the Campaigns
++ Without data outlining attributes of the campaign, it is hard to tell whether shift in target market overall use response rates
+
+***
+![](Rplot02.png)
+
+***
+Campaign 1
+```{r, echo = F}
+kable(cmp1)
+```
+Campaign 2
+```{r, echo = F}
+kable(cmp2)
+```
+
+Gender-Based Conversion Rates
+=======================================================
+
+```{r, echo = F}
+kable(gender.cr)
+```
+
++ Conversion rate falls across the board with
+Campaign 2
+
+```{r, echo = F}
+kable(g.diff.table)
+```
+
+
+
+=======================================================
+
+# Could their be a link between the Campaigns and the Age of the respondents? 
+
++ Extracted **Age** from **birthdate**
++ Ran into some curious data 
++ ...Some had to be removed
+
+=======================================================
+```{r, echo = F}
+funny <- funny[, c('user_id', 'state', 'gender', 'birthdate', 'age')]
+funny$age <- as.character(funny$age)
+names(funny) <- c('user_id', 'state', 'gender', 'birthdate', 'age (years)')
+kable(funny)
+```
+
+
+![](funny.png)
+
+How the Campaigns affect the age of the Respondents
+=======================================================
+```{r, echo = F}
+kable(yes.table)
+```
+
+Probability Chart
+=======================================================
+
+### Chance what we are seeing is by *chance*
+
++ The **Mann-Whitney U-test** was performed on the aggregate-by-age data
++ The **p-values** are significantly below the **p-critical** of 0.05
++ the **p-value** is the probability our results were flukes - the **null-hypothesis**.
+
+***
+```{r, echo =F}
+kable(prob.table)
+```
+
++ Which means, we reject the **null-hypothesis**, that the samples come from the same population, and accept the **alternative-hypothesis**, that condition(**change-in-campaign**) has an affect on the outcome(**age-of-respondent**)
+
+
+
+=======================================================
+
+# So what does this mean?
+# ...
+
+Conclusion
+=======================================================
+
+From what I understand, Novu's goal is to work with the Healthcare Industry to bring their constituents up to a higher level of Health and Wellness. For me, that also implies that we are a Health Risk Mitigator.  And it is a constant, that the older one gets the higher the chances of health complications become.  In the perspective of Insurance Purveyors, the higher the health risk means higher liability for them.
+
+This dataset is very important for that reason.  Although the conversion rates were lower for Campaign 2, it successfully targeted the older, higher-risk demographics, and got them to respond.  It should also be noted that regardless of the seemingly lower performance rate, Campaign 2 hit a higher raw conversion count.
+
+I would have liked to have done A/B Testing or Split Testing on the site itself.  I feel that is the only way to know for sure which test meets the bottom-line.  But within the context of this data, and my understanding of the company's goals, I would fully support testing and implementing Campaign 2's functionality.
