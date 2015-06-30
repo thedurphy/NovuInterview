@@ -77,8 +77,9 @@ c.table$NO <- c.table$x[1:2]
 c.table$x <- NULL
 names(c.table) <- c('Campaign', 'YES', 'NO')
 percent <- c.table$YES/(c.table$YES + c.table$NO) * 100
-c.table$ResponsePercentage <- round(percent,
+c.table$ConversionRate <- round(percent,
                                     digits = 1)
+names(c.table) <- c('Pilots', 'YES', 'NO', 'ConversionRate')
 
 # Campaign Success Rate by State
 state.table <- aggregate(novu.data$responded, list(State=novu.data$state, 
@@ -100,6 +101,8 @@ change[3] <- 'ND';
 change[5] <- 'SD';
 change[7] <- 'WI'
 state.table$PercentageChange <- change
+names(state.table) <- c('State', 'Pilots', 'YES', 'NO', 'ConversionRate', 'Con.Difference')
+
 
 # Aggregated by Gender Variable
 gender.table <- aggregate(novu.data$gender, list(State=novu.data$state, 
@@ -127,7 +130,7 @@ gender.cr <- data.frame('State' = c('MN', 'MN',
                        'ND', 'ND', 
                        'SD', 'SD',
                        'WI', 'WI'), 
-           'Campaign' = rep(c(1, 2), 4),
+           'Pilots' = rep(c(1, 2), 4),
            'T.Female' = t.fem, 
            'F.Con.Rate' = f.cr,
            'T.Male' = m.cr,
@@ -173,6 +176,8 @@ age_histogram <- qplot(x = as.numeric(age), data = complete.age,
     ylab('Frequency') +
     ggtitle('Distribution of Age\nBy Campaign') + 
     labs(fill = 'Campaign')
+names(yes.table) <- c('State', 'Pilots', 'Means', 'Difference')
+
 
 # Mann-Whitney U-test on age differences
 age.1 <- as.numeric(complete.age[complete.age$responded == 'YES' & complete.age$campaign == 1,]$age)
@@ -243,13 +248,13 @@ kable(state.table, align = 'r', format = 'markdown')
 
 Shift in Target Market
 ========================================================
-Concentration of Users per Campaign
+Concentration of Users per Pilot
 ```{r, echo = F, fig.width = 15, fig.height = 12}
 ggplot(aes(x = State, y = YES + NO, fill = State), data = state.table) + 
     geom_bar(stat = 'identity') + 
-    facet_wrap(~Campaign) + 
+    facet_wrap(~Pilots) + 
     ylab('Total Users') + 
-    xlab('Campaign') + 
+    xlab('States') + 
     theme(text = element_text(size = 20))
 
 ```
@@ -257,20 +262,20 @@ ggplot(aes(x = State, y = YES + NO, fill = State), data = state.table) +
 ===
 ### Conitued...
 
-+ In the first campaign, MN(**orange**) has 50.6% of the user base
-+ In the second campaign, target market shifts - SD(**blue**) takes 55.2% of the cut while MN drops to 8.8%
-+ The blank spot in Campaign 1 represents the the raw difference in user base between the Campaigns
-+ Without data outlining attributes of the campaign, it is hard to tell whether shift in target market overall use response rates
++ In the first Pilot, MN(**orange**) has 50.6% of the user base
++ In the second Pilot, target market shifts - SD(**blue**) takes 55.2% of the cut while MN drops to 8.8%
++ The blank spot in Pilot 1 represents the the raw difference in user base between the Pilots
++ Without data outlining attributes of the Pilots, it is hard to tell whether shift in target market overall use response rates
 
 ***
 ![](Rplot02.png)
 
 ***
-Campaign 1
+Pilot 1
 ```{r, echo = F}
 kable(cmp1)
 ```
-Campaign 2
+Pilot 2
 ```{r, echo = F}
 kable(cmp2)
 ```
@@ -283,7 +288,7 @@ kable(gender.cr)
 ```
 
 + Conversion rate falls across the board with
-Campaign 2
+Pilot 2
 
 ```{r, echo = F}
 kable(g.diff.table)
@@ -293,7 +298,7 @@ kable(g.diff.table)
 
 =======================================================
 
-# Could their be a link between the Campaigns and the Age of the respondents? 
+# Could their be a link between the Pilots and the Age of the respondents? 
 
 + Extracted **Age** from **birthdate**
 + Ran into some curious data 
@@ -319,7 +324,7 @@ kable(yes.table)
 Probability Chart
 =======================================================
 
-### Chance what we are seeing is by *chance*
+### What are the chances that the effect we are seeing from Pilot 2 is a *fluke*?
 
 + The **Mann-Whitney U-test** was performed on the aggregate-by-age data
 + The **p-values** are significantly below the **p-critical** of 0.05
@@ -342,8 +347,8 @@ kable(prob.table)
 Conclusion
 =======================================================
 
-From what I understand, Novu's goal is to work with the Healthcare Industry to bring their constituents up to a higher level of Health and Wellness. For me, that also implies that we are a Health Risk Mitigator.  And it is a constant, that the older one gets the higher the chances of health complications become.  In the perspective of Insurance Purveyors, the higher the health risk means higher liability for them.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;From what I understand, Novu's goal is to work with the Healthcare Industry to bring their constituents up to a higher level of Health and Wellness. For me, that also implies that we are a Health Risk Mitigator.  And it is a constant, that the older one gets the higher the chances of health complications become.  In the perspective of Insurance Purveyors, the higher the health risk means higher liability for them.
 
-This dataset is very important for that reason.  Although the conversion rates were lower for Campaign 2, it successfully targeted the older, higher-risk demographics, and got them to respond.  It should also be noted that regardless of the seemingly lower performance rate, Campaign 2 hit a higher raw conversion count.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Although the conversion rates were lower for Pilot 2, it successfully targeted the older, higher-risk demographics, and got them to respond.  It should also be noted that regardless of the seemingly lower performance rate, Pilot 2 hit a higher raw conversion count.
 
-I would have liked to have done A/B Testing or Split Testing on the site itself.  I feel that is the only way to know for sure which test meets the bottom-line.  But within the context of this data, and my understanding of the company's goals, I would fully support testing and implementing Campaign 2's functionality.
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Personally, I would have liked to have performed some A/B tests on the sites themselves.  Ideally, we would be able to identify and implement the positive outcomes of the high success rates of Pilot 1 with the appeal to a higher age demographic and raw numbers of Pilot 2 in a 3rd Pilot Campaign.
