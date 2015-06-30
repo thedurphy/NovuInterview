@@ -59,14 +59,14 @@ Concentration of Users per Pilot
 ***
 Pilot 1
 
-| MN| ND| SD| WI|
-|--:|--:|--:|--:|
-| NA| NA| NA| NA|
+|   MN|   ND|  SD|   WI|
+|----:|----:|---:|----:|
+| 50.6| 16.3| 7.7| 25.4|
 Pilot 2
 
-| MN| ND| SD| WI|
-|--:|--:|--:|--:|
-| NA| NA| NA| NA|
+|  MN|   ND|   SD|   WI|
+|---:|----:|----:|----:|
+| 8.8| 22.3| 55.2| 13.7|
 
 Gender-Based Conversion Rates
 =======================================================

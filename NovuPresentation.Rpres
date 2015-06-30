@@ -208,14 +208,14 @@ prob.table <- data.frame('States' = c('All', 'MN', 'ND', 'SD', 'WI'),
            'Chance' = c(All.pvalue, MN.pvalue, ND.pvalue, SD.pvalue, WI.pvalue))
 
 # Pie Chart Calculations
-c1 <- state.table[state.table$Campaign == 1,]
+c1 <- state.table[state.table$Pilots == 1,]
 st_per1 <- round((c1$YES + c1$NO)/sum(c1$YES + c1$NO)*100, 
                  digit = 1)
 cmp1 <- data.frame('MN' = st_per1[1], 
            'ND' = st_per1[2],
            'SD' = st_per1[3], 
            'WI' = st_per1[4])
-c2 <- state.table[state.table$Campaign == 2,]
+c2 <- state.table[state.table$Pilots == 2,]
 st_per2 <- round((c2$YES + c2$NO)/sum(c2$YES + c2$NO)*100, 
                  digit = 1)
 cmp2 <- data.frame('MN' = st_per2[1], 
